@@ -1,186 +1,144 @@
-#########################################################
-## File Name: hangman.py                               ##
-## Description: Starter for Hangman project - ICS3U    ##
-#########################################################
-import pygame
 import random
-
-pygame.init()
-winHeight = 480
-winWidth = 700
-win=pygame.display.set_mode((winWidth,winHeight))
-#---------------------------------------#
-# initialize global variables/constants #
-#---------------------------------------#
-BLACK = (0,0, 0)
-WHITE = (255,255,255)
-RED = (255,0, 0)
-GREEN = (0,255,0)
-BLUE = (0,0,255)
-LIGHT_BLUE = (102,255,255)
-
-btn_font = pygame.font.SysFont("arial", 20)
-guess_font = pygame.font.SysFont("monospace", 24)
-lost_font = pygame.font.SysFont('arial', 45)
-word = ''
-buttons = []
-guessed = []
-hangmanPics = [pygame.image.load('hangman0.png'), pygame.image.load('hangman1.png'), pygame.image.load('hangman2.png'), pygame.image.load('hangman3.png'), pygame.image.load('hangman4.png'), pygame.image.load('hangman5.png'), pygame.image.load('hangman6.png')]
-
-limbs = 0
+from words import word_list
 
 
-def redraw_game_window():
-    global guessed
-    global hangmanPics
-    global limbs
-    win.fill(GREEN)
-    # Buttons
-    for i in range(len(buttons)):
-        if buttons[i][4]:
-            pygame.draw.circle(win, BLACK, (buttons[i][1], buttons[i][2]), buttons[i][3])
-            pygame.draw.circle(win, buttons[i][0], (buttons[i][1], buttons[i][2]), buttons[i][3] - 2
-                               )
-            label = btn_font.render(chr(buttons[i][5]), 1, BLACK)
-            win.blit(label, (buttons[i][1] - (label.get_width() / 2), buttons[i][2] - (label.get_height() / 2)))
-
-    spaced = spacedOut(word, guessed)
-    label1 = guess_font.render(spaced, 1, BLACK)
-    rect = label1.get_rect()
-    length = rect[2]
-    
-    win.blit(label1,(winWidth/2 - length/2, 400))
-
-    pic = hangmanPics[limbs]
-    win.blit(pic, (winWidth/2 - pic.get_width()/2 + 20, 150))
-    pygame.display.update()
+def get_word():
+    word = random.choice(word_list)
+    return word.upper()
 
 
-def randomWord():
-    file = open('words.txt')
-    f = file.readlines()
-    i = random.randrange(0, len(f) - 1)
-
-    return f[i][:-1]
-
-
-def hang(guess):
-    global word
-    if guess.lower() not in word.lower():
-        return True
+def play(word):
+    word_completion = "_" * len(word)
+    guessed = False
+    guessed_letters = []
+    guessed_words = []
+    tries = 6
+    print("Let's play Hangman!")
+    print(display_hangman(tries))
+    print(word_completion)
+    print("\n")
+    while not guessed and tries > 0:
+        guess = input("Please guess a letter or word: ").upper()
+        if len(guess) == 1 and guess.isalpha():
+            if guess in guessed_letters:
+                print("You already guessed the letter", guess)
+            elif guess not in word:
+                print(guess, "is not in the word.")
+                tries -= 1
+                guessed_letters.append(guess)
+            else:
+                print("Good job,", guess, "is in the word!")
+                guessed_letters.append(guess)
+                word_as_list = list(word_completion)
+                indices = [i for i, letter in enumerate(word) if letter == guess]
+                for index in indices:
+                    word_as_list[index] = guess
+                word_completion = "".join(word_as_list)
+                if "_" not in word_completion:
+                    guessed = True
+        elif len(guess) == len(word) and guess.isalpha():
+            if guess in guessed_words:
+                print("You already guessed the word", guess)
+            elif guess != word:
+                print(guess, "is not the word.")
+                tries -= 1
+                guessed_words.append(guess)
+            else:
+                guessed = True
+                word_completion = word
+        else:
+            print("Not a valid guess.")
+        print(display_hangman(tries))
+        print(word_completion)
+        print("\n")
+    if guessed:
+        print("Congrats, you guessed the word! You win!")
     else:
-        return False
+        print("Sorry, you ran out of tries. The word was " + word + ". Maybe next time!")
 
 
-def spacedOut(word, guessed=[]):
-    spacedWord = ''
-    guessedLetters = guessed
-    for x in range(len(word)):
-        if word[x] != ' ':
-            spacedWord += '_ '
-            for i in range(len(guessedLetters)):
-                if word[x].upper() == guessedLetters[i]:
-                    spacedWord = spacedWord[:-2]
-                    spacedWord += word[x].upper() + ' '
-        elif word[x] == ' ':
-            spacedWord += ' '
-    return spacedWord
-            
+def display_hangman(tries):
+    stages = [  # final state: head, torso, both arms, and both legs
+                """
+                   --------
+                   |      |
+                   |      O
+                   |     \\|/
+                   |      |
+                   |     / \\
+                   -
+                """,
+                # head, torso, both arms, and one leg
+                """
+                   --------
+                   |      |
+                   |      O
+                   |     \\|/
+                   |      |
+                   |     / 
+                   -
+                """,
+                # head, torso, and both arms
+                """
+                   --------
+                   |      |
+                   |      O
+                   |     \\|/
+                   |      |
+                   |      
+                   -
+                """,
+                # head, torso, and one arm
+                """
+                   --------
+                   |      |
+                   |      O
+                   |     \\|
+                   |      |
+                   |     
+                   -
+                """,
+                # head and torso
+                """
+                   --------
+                   |      |
+                   |      O
+                   |      |
+                   |      |
+                   |     
+                   -
+                """,
+                # head
+                """
+                   --------
+                   |      |
+                   |      O
+                   |    
+                   |      
+                   |     
+                   -
+                """,
+                # initial empty state
+                """
+                   --------
+                   |      |
+                   |      
+                   |    
+                   |      
+                   |     
+                   -
+                """
+    ]
+    return stages[tries]
 
-def buttonHit(x, y):
-    for i in range(len(buttons)):
-        if x < buttons[i][1] + 20 and x > buttons[i][1] - 20:
-            if y < buttons[i][2] + 20 and y > buttons[i][2] - 20:
-                return buttons[i][5]
-    return None
+
+def main():
+    word = get_word()
+    play(word)
+    while input("Play Again? (Y/N) ").upper() == "Y":
+        word = get_word()
+        play(word)
 
 
-def end(winner=False):
-    global limbs
-    lostTxt = 'You Lost, press any key to play again...'
-    winTxt = 'WINNER!, press any key to play again...'
-    redraw_game_window()
-    pygame.time.delay(1000)
-    win.fill(GREEN)
-
-    if winner == True:
-        label = lost_font.render(winTxt, 1, BLACK)
-    else:
-        label = lost_font.render(lostTxt, 1, BLACK)
-
-    wordTxt = lost_font.render(word.upper(), 1, BLACK)
-    wordWas = lost_font.render('The phrase was: ', 1, BLACK)
-
-    win.blit(wordTxt, (winWidth/2 - wordTxt.get_width()/2, 295))
-    win.blit(wordWas, (winWidth/2 - wordWas.get_width()/2, 245))
-    win.blit(label, (winWidth / 2 - label.get_width() / 2, 140))
-    pygame.display.update()
-    again = True
-    while again:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-            if event.type == pygame.KEYDOWN:
-                again = False
-    reset()
-
-
-def reset():
-    global limbs
-    global guessed
-    global buttons
-    global word
-    for i in range(len(buttons)):
-        buttons[i][4] = True
-
-    limbs = 0
-    guessed = []
-    word = randomWord()
-
-#MAINLINE
-
-
-# Setup buttons
-increase = round(winWidth / 13)
-for i in range(26):
-    if i < 13:
-        y = 40
-        x = 25 + (increase * i)
-    else:
-        x = 25 + (increase * (i - 13))
-        y = 85
-    buttons.append([LIGHT_BLUE, x, y, 20, True, 65 + i])
-    # buttons.append([color, x_pos, y_pos, radius, visible, char])
-
-word = randomWord()
-inPlay = True
-
-while inPlay:
-    redraw_game_window()
-    pygame.time.delay(10)
-
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            inPlay = False
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                inPlay = False
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            clickPos = pygame.mouse.get_pos()
-            letter = buttonHit(clickPos[0], clickPos[1])
-            if letter != None:
-                guessed.append(chr(letter))
-                buttons[letter - 65][4] = False
-                if hang(chr(letter)):
-                    if limbs != 5:
-                        limbs += 1
-                    else:
-                        end()
-                else:
-                    print(spacedOut(word, guessed))
-                    if spacedOut(word, guessed).count('_') == 0:
-                        end(True)
-
-pygame.quit()
-
-# always quit pygame when done!
+if __name__ == "__main__":
+    main()
